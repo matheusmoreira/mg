@@ -1,3 +1,4 @@
+*.log
 *.[oa]
 *.so
 Makefile

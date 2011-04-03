@@ -2,16 +2,19 @@
 
 #include "X11_Window.c"
 
-static X11_Window * window_from(VALUE self) {
+/**
+ * Retrieves a X11_Window from a ruby object.
+ */
+static X11_Window * window_from(VALUE obj) {
     X11_Window * w;
-    Data_Get_Struct(self, X11_Window, w);
+    Data_Get_Struct(obj, X11_Window, w);
     return w;
 }
 
 /**
  * Allocates memory for X11_Window and stores it in the object.
  */
-static VALUE native_alloc(VALUE klass) {
+static VALUE native_window_alloc(VALUE klass) {
     X11_Window * w = X11_Window_new();
     X11_Window_init(w);
     // Wrap X11_Window into Ruby VALUE
@@ -64,6 +67,13 @@ static unsigned int native_window_h(VALUE self) {
  */
 static const char * native_window_name(VALUE self) {
     return X11_Window_name(window_from(self));
+}
+
+/**
+ * Returns zero if the window is visible, anything else if not.
+ */
+static int native_window_visible(VALUE self) {
+    return X11_Window_visible(window_from(self));
 }
 
 /**
@@ -127,4 +137,8 @@ static void native_window_set_h(VALUE self, unsigned int h) {
  */
 static void native_window_set_name(VALUE self, const char * name) {
     X11_Window_set_name(window_from(self), name);
+}
+
+static void native_window_set_fullscreen(VALUE self, int fs) {
+    X11_Window_set_fullscreen(window_from(self), fs);
 }

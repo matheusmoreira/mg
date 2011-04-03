@@ -1,4 +1,5 @@
 #include <X11/Xlib.h>
+#include <X11/Xatom.h>
 
 /**
  * Contains data for a X11 window.
@@ -8,6 +9,35 @@ typedef struct {
     int screen; /** Screen on the display. */
     Window window; /** The window. */
 } X11_Window;
+
+/**
+ * Motif window hints
+ */
+typedef struct {
+    unsigned long flags;
+    unsigned long functions;
+    unsigned long decorations;
+    long          inputMode;
+    unsigned long status;
+} Hints;
+
+/**
+ * Atoms.
+ */
+
+#define _NET_WM_STATE_REMOVE 0L
+#define _NET_WM_STATE_ADD    1L
+#define _NET_WM_STATE_TOGGLE 2L
+
+Atom _NET_WM_STATE;
+Atom _NET_WM_STATE_HIDDEN;
+Atom _NET_WM_STATE_MAXIMIZED_VERT;
+Atom _NET_WM_STATE_MAXIMIZED_HORZ;
+Atom _NET_WM_STATE_FULLSCREEN;
+Atom _NET_WM_NAME;
+Atom _NET_WM_ICON_NAME;
+Atom _NET_WM_ICON;
+
 
 /**
  * Returns a pointer to newly allocated memory for a X11_Window.
@@ -107,4 +137,64 @@ static void X11_Window_set_visible(X11_Window * w, int visible) {
         XUnmapWindow(w->display, w->window);
     }
     XFlush(w->display);
+}
+
+/**
+ * Returns true if the window has been mapped, false otherwise.
+ */
+static int X11_Window_visible(X11_Window * w) {
+    return X11_Window_get_attributes(w).map_state != IsUnmapped;
+}
+
+/**
+ * Make the window span the entire screen.
+ */
+static void X11_Window_set_fullscreen(X11_Window * w, int fs) {
+    if (X11_Window_visible(w)) {
+        
+    } else {
+        Hints h;
+        Atom property;
+        memset(&h, 0, sizeof(Hints));
+        h.flags = 2;
+        property = XInternAtom(w->display, "_MOTIF_WM_HINTS", True);
+        if (property != 0) {
+            XChangeProperty(w->display, w->window, property, property, 32,
+                            PropModeReplace, (unsigned char *) &h, 5);
+        } else {
+            // Failed
+        }
+    }
+}
+
+/**
+ * _NET_WM implementation
+ */
+static void X11_Window_set_fs(X11_Window * w, int fs) {
+    if (X11_Window_visible(w)) {
+        XEvent e;
+        memset(&e, 0, sizeof(XEvent));
+        e.xany.type = ClientMessage;
+        e.xclient.message_type = _NET_WM_STATE;
+        e.xclient.format = 32;
+        e.xclient.window = w->window;
+        e.xclient.data.l[0] = fs ? _NET_WM_STATE_ADD : _NET_WM_STATE_REMOVE;
+        e.xclient.data.l[1] = _NET_WM_STATE_FULLSCREEN;
+        e.xclient.data.l[3] = 0L;
+        XSendEvent(w->display, RootWindow(w->display, w->screen),
+                   0, SubstructureNotifyMask | SubstructureRedirectMask, &e);
+    } else {
+        int count = 0;
+        Atom atoms[1];
+        if (fs) {
+            atoms[count++] = _NET_WM_STATE_FULLSCREEN;
+        }
+        if (count > 0) {
+            XChangeProperty(w->display, w->window, _NET_WM_STATE, XA_ATOM, 32,
+                            PropModeReplace, (unsigned char *) atoms, count);
+        } else {
+            XDeleteProperty(w->display, w->window, _NET_WM_STATE);
+        }
+        XFlush(w->display);
+    }
 }

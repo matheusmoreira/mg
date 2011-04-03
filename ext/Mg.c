@@ -1,10 +1,12 @@
 #include <ruby.h>
 
-#include "Mg/Window.c"
+#include <Mg.h>
 
-static VALUE Mg_Module = Qnil;
+#include <Mg/Window.h>
+#include <Mg/DisplayMode.h>
 
-void Init_Mg() {
+void Init_Mg(void) {
     Mg_Module = rb_define_module("Mg");
-    init_window_module_under(Mg_Module);
+    init_window_class_under(Mg_Module);
+    init_display_mode_class_under(Mg_Module);
 }
