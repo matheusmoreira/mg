@@ -1,4 +1,4 @@
-#include "NativeWindow.h"
+#include "X11_NativeWindow.h"
 #include "X11_Window.h"
 
 #include <ruby.h>

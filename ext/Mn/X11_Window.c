@@ -1,5 +1,9 @@
 #include "X11_Window.h"
 
+#include <stdlib.h>
+
+#include <ruby.h>
+
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 

@@ -1,7 +1,7 @@
-#include <Mg.h>
+#include "Mg.h"
 
-#include <Mg/Window.h>
-#include <Mg/DisplayMode.h>
+#include "Window.h"
+#include "DisplayMode.h"
 
 #include <ruby.h>
 

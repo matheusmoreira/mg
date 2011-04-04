@@ -1,7 +1,7 @@
-#include <Mg/Window.h>
+#include "Window.h"
 
 #if defined(MG_PLATFORM_LINUX) && defined(MG_PLATFORM_LINUX_X11)
-    #include "x11/NativeWindow.h"
+    #include "X11_NativeWindow.h"
 #endif
 
 #include <ruby.h>

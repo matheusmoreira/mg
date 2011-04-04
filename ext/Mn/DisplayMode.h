@@ -6,7 +6,7 @@
 /**
  * DisplayMode class.
  */
-static VALUE Mg_DisplayMode_Class = Qnil;
+static VALUE Mg_Display_Mode_Class = Qnil;
 
 /**
  * Returns the display mode that's currently in use.

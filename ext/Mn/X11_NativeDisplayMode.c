@@ -1,6 +1,6 @@
-#include "NativeDisplayMode.h"
+#include "X11_NativeDisplayMode.h"
 
-#include <Mg/DisplayMode.h>
+#include "DisplayMode.h"
 
 #include <ruby.h>
 
@@ -26,7 +26,7 @@ VALUE native_display_mode_get_current_mode(VALUE klass) {
     XRRScreenSize * sizes = XRRConfigSizes(config, &numSizes);
     VALUE mode = Qnil;
     if (numSizes > 0) {
-        mode = rb_funcall(Mg_DisplayMode_Class,
+        mode = rb_funcall(Mg_Display_Mode_Class,
                           rb_intern("new"),
                           3,
                           INT2FIX(sizes[currentMode].width),
@@ -59,18 +59,16 @@ VALUE native_display_mode_get_modes(VALUE klass) {
         int numDepths = 0;
         int * depths = XListDepths(d, s, &numDepths);
         if (numDepths > 0) {
-            if (numSizes != numDepths) {
-                // Different number of sizes and depths...
-                rb_raise(rb_eRuntimeError, "%d sizes, %d depths", numSizes, numDepths);
-            }
-            for (int i = 0; i < numSizes; ++i) {
-                for (int i = 0; i < numDepths; ++i) {
-                    VALUE mode = rb_funcall(Mg_DisplayMode_Class,
+            int i;
+            for (i = 0; i < numDepths; ++i) {
+                int j;
+                for (j = 0; j < numSizes; ++j) {
+                    VALUE mode = rb_funcall(Mg_Display_Mode_Class,
                                             rb_intern("new"),
                                             3,
-                                            INT2FIX(sizes[i].width),
-                                            INT2FIX(sizes[i].height),
-                                            INT2FIX(depths[j]));
+                                            INT2FIX(sizes[j].width),
+                                            INT2FIX(sizes[j].height),
+                                            INT2FIX(depths[i]));
                     rb_ary_push(modes, mode);
                 }
             }
