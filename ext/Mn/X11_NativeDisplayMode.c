@@ -26,13 +26,13 @@ VALUE native_display_mode_get_current_mode(VALUE klass) {
     XRRScreenSize * sizes = XRRConfigSizes(config, &numSizes);
     VALUE mode = Qnil;
     if (numSizes > 0) {
-        mode = rb_funcall(Mg_Display_Mode_Class,
-                          rb_intern("new"),
-                          3,
-                          INT2FIX(sizes[currentMode].width),
-                          INT2FIX(sizes[currentMode].height),
-                          INT2FIX(DefaultDepth(d, s)));
+        mode = display_mode_new(klass,
+                                sizes[currentMode].width,
+                                sizes[currentMode].height,
+                                DefaultDepth(d, s));
     }
+    XRRFreeScreenConfigInfo(config);
+    XCloseDisplay(d);
     return mode;
 }
 
@@ -63,16 +63,17 @@ VALUE native_display_mode_get_modes(VALUE klass) {
             for (i = 0; i < numDepths; ++i) {
                 int j;
                 for (j = 0; j < numSizes; ++j) {
-                    VALUE mode = rb_funcall(Mg_Display_Mode_Class,
-                                            rb_intern("new"),
-                                            3,
-                                            INT2FIX(sizes[j].width),
-                                            INT2FIX(sizes[j].height),
-                                            INT2FIX(depths[i]));
+                    VALUE mode = display_mode_new(klass,
+                                                  sizes[j].width,
+                                                  sizes[j].height,
+                                                  depths[i]);
                     rb_ary_push(modes, mode);
                 }
             }
         }
+        XFree(depths);
     }
+    XRRFreeScreenConfigInfo(config);
+    XCloseDisplay(d);
     return modes;
 }

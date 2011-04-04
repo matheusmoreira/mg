@@ -19,6 +19,12 @@ extern VALUE display_mode_get_current_mode(VALUE klass);
 extern VALUE display_mode_get_modes(VALUE klass);
 
 /**
+ * Returns a new DisplayMode instance.
+ * +klass+ must be the DisplayMode class.
+ */
+extern VALUE display_mode_new(VALUE klass, int w, int h, int bpp);
+
+/**
  * Initializes the DisplayMode class.
  */
 extern void init_display_mode_class_under(VALUE module);
