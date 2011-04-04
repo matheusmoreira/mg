@@ -5,6 +5,6 @@
 
 static VALUE Mg_Module = Qnil;
 
-void Init_Mg(void);
+extern void init_Mg_module(void);
 
 #endif /* MG_H */

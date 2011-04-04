@@ -1,14 +1,13 @@
+#include "NativeDisplayMode.h"
+
+#include <Mg/DisplayMode.h>
+
 #include <ruby.h>
 
 #include <X11/Xlib.h>
 #include <X11/extensions/Xrandr.h>
 
-#include <Mg/DisplayMode.h>
-
-/**
- * Initializes a DisplayMode object with the current display mode.
- */
-static VALUE native_display_mode_get_current_mode(VALUE klass) {
+VALUE native_display_mode_get_current_mode(VALUE klass) {
     Display * d = XOpenDisplay(0);
     if (d == 0) {
         rb_raise(rb_eRuntimeError, "could not open Display");
@@ -40,7 +39,7 @@ static VALUE native_display_mode_get_current_mode(VALUE klass) {
 /**
  * Returns all available modes in a Ruby array.
  */
-static VALUE native_display_mode_get_modes(VALUE klass) {
+VALUE native_display_mode_get_modes(VALUE klass) {
     Display * d = XOpenDisplay(0);
     if (d == 0) {
         rb_raise(rb_eRuntimeError, "could not open Display");
