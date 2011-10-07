@@ -6,27 +6,27 @@
 /**
  * DisplayMode class.
  */
-static VALUE Mg_Display_Mode_Class = Qnil;
+static VALUE mg_display_mode_class = Qnil;
 
 /**
  * Returns the display mode that's currently in use.
  */
-extern VALUE display_mode_get_current_mode(VALUE klass);
+extern VALUE mg_display_mode_get_current_mode(VALUE klass);
 
 /**
  * Returns all available display modes in a Ruby array.
  */
-extern VALUE display_mode_get_modes(VALUE klass);
+extern VALUE mg_display_mode_get_modes(VALUE klass);
 
 /**
  * Returns a new DisplayMode instance.
  * +klass+ must be the DisplayMode class.
  */
-extern VALUE display_mode_new(VALUE klass, int w, int h, int bpp);
+extern VALUE mg_display_mode_new(VALUE klass, int w, int h, int bpp);
 
 /**
  * Initializes the DisplayMode class.
  */
-extern void init_display_mode_class_under(VALUE module);
+extern void init_mg_display_mode_class_under(VALUE module);
 
 #endif /* MG_DISPLAY_MODE_H */

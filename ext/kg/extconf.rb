@@ -15,4 +15,4 @@ case RbConfig::CONFIG['host_os']
     exit false
 end
 
-create_makefile 'Mn'
+create_makefile 'kg'

@@ -3,8 +3,8 @@
 
 #include <ruby.h>
 
-static VALUE Mg_Module = Qnil;
+static VALUE mg_module = Qnil;
 
-extern void init_Mg_module(void);
+extern void init_mg_module(void);
 
 #endif /* MG_H */

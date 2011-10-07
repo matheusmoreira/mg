@@ -1,13 +1,16 @@
-#include "X11_NativeDisplayMode.h"
+#include "X11_native_display_mode.h"
 
-#include "DisplayMode.h"
+#include "display_mode.h"
 
 #include <ruby.h>
 
 #include <X11/Xlib.h>
 #include <X11/extensions/Xrandr.h>
 
-VALUE native_display_mode_get_current_mode(VALUE klass) {
+/**
+ * Returns the current display mode.
+ */
+VALUE mg_native_display_mode_get_current_mode(VALUE klass) {
     Display * d = XOpenDisplay(0);
     if (d == 0) {
         rb_raise(rb_eRuntimeError, "could not open Display");
@@ -26,10 +29,10 @@ VALUE native_display_mode_get_current_mode(VALUE klass) {
     XRRScreenSize * sizes = XRRConfigSizes(config, &numSizes);
     VALUE mode = Qnil;
     if (numSizes > 0) {
-        mode = display_mode_new(klass,
-                                sizes[currentMode].width,
-                                sizes[currentMode].height,
-                                DefaultDepth(d, s));
+        mode = mg_display_mode_new(klass,
+                                   sizes[currentMode].width,
+                                   sizes[currentMode].height,
+                                   DefaultDepth(d, s));
     }
     XRRFreeScreenConfigInfo(config);
     XCloseDisplay(d);
@@ -39,7 +42,7 @@ VALUE native_display_mode_get_current_mode(VALUE klass) {
 /**
  * Returns all available modes in a Ruby array.
  */
-VALUE native_display_mode_get_modes(VALUE klass) {
+VALUE mg_native_display_mode_get_modes(VALUE klass) {
     Display * d = XOpenDisplay(0);
     if (d == 0) {
         rb_raise(rb_eRuntimeError, "could not open Display");
@@ -63,10 +66,10 @@ VALUE native_display_mode_get_modes(VALUE klass) {
             for (i = 0; i < numDepths; ++i) {
                 int j;
                 for (j = 0; j < numSizes; ++j) {
-                    VALUE mode = display_mode_new(klass,
-                                                  sizes[j].width,
-                                                  sizes[j].height,
-                                                  depths[i]);
+                    VALUE mode = mg_display_mode_new(klass,
+                                                     sizes[j].width,
+                                                     sizes[j].height,
+                                                     depths[i]);
                     rb_ary_push(modes, mode);
                 }
             }
