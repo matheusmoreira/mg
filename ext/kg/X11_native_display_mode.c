@@ -9,7 +9,7 @@
 
 /* DisplayData structure definition */
 
-struct DisplayData {
+static struct DisplayData {
     Display * display;
     int screen;
     XRRScreenConfiguration * screen_configuration;
@@ -64,26 +64,26 @@ VALUE mg_native_display_mode_get_current_mode(VALUE klass) {
  * Allocates memory for a new instance of the DisplayData structure and returns
  * a pointer to it.
  */
-struct DisplayData * DisplayData_new();
+static struct DisplayData * DisplayData_new();
 
 /**
  * Checks if the display passed as parameter is valid. Raises a Ruby exception
  * if it isn't.
  */
-void check_display(Display *);
+static void check_display(Display *);
 
 /**
  * Checks if the Xrandr extension is present on the X Server bound to the
  * connection to the display passed as parameter. Raises a Ruby exception if the
  * extension isn't present.
  */
-void look_for_Xrandr(Display *);
+static void look_for_Xrandr(Display *);
 
 /**
  * Checks if the screen configuration passed as parameter is valid. Raises a
  * Ruby exception if it isn't.
  */
-void check_screen_configuration(XRRScreenConfiguration * config);
+static void check_screen_configuration(XRRScreenConfiguration * config);
 
 /* Helper function implementation */
 
@@ -207,25 +207,25 @@ static VALUE find_all_display_modes(VALUE klass, struct DisplayData * data) {
     return modes;
 }
 
-void check_display(Display * d) {
+static void check_display(Display * d) {
     if (d == 0) {
         rb_raise(rb_eRuntimeError, "could not open Display");
     }
 }
 
-void look_for_Xrandr(Display * d) {
+static void look_for_Xrandr(Display * d) {
     int check;
     if (!XQueryExtension(d, "RANDR", &check, &check, &check)) {
         rb_raise(rb_eRuntimeError, "Xrandr is not present");
     }
 }
 
-void check_screen_configuration(XRRScreenConfiguration * config) {
+static void check_screen_configuration(XRRScreenConfiguration * config) {
     if (config == 0) {
         rb_raise(rb_eRuntimeError, "could not retrieve screen configuration");
     }
 }
 
-struct DisplayData * DisplayData_new() {
+static struct DisplayData * DisplayData_new() {
     return malloc(sizeof(struct DisplayData));
 }
