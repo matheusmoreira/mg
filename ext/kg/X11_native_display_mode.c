@@ -67,23 +67,27 @@ VALUE mg_native_display_mode_get_current_mode(VALUE klass) {
 static struct DisplayData * DisplayData_new();
 
 /**
- * Checks if the display passed as parameter is valid. Raises a Ruby exception
- * if it isn't.
+ * Checks if the display is valid. Raises a Ruby exception if it isn't.
  */
-static void check_display(Display *);
+static void check_display(struct DisplayData *);
 
 /**
- * Checks if the Xrandr extension is present on the X Server bound to the
- * connection to the display passed as parameter. Raises a Ruby exception if the
- * extension isn't present.
+ * Checks if the Xrandr extension is present on the X Server to which the
+ * display is connected to. Closes the connection and raises a Ruby exception if
+ * the extension isn't present.
+ *
+ * This method assumes that the Display is valid.
  */
-static void look_for_Xrandr(Display *);
+static void look_for_Xrandr(struct DisplayData *);
 
 /**
- * Checks if the screen configuration passed as parameter is valid. Raises a
+ * Checks if the screen configuration is valid. Closes the display and raises a
  * Ruby exception if it isn't.
+ *
+ * This method assumes that both the Display is valid and that Xrandr extension
+ * is present.
  */
-static void check_screen_configuration(XRRScreenConfiguration * config);
+static void check_screen_configuration(struct DisplayData *);
 
 /* Helper function implementation */
 
@@ -93,10 +97,10 @@ static VALUE with_current_screen_configuration(VALUE (*f)(struct DisplayData *))
 
     /* Open connection to the X Display Server */
     data->display = XOpenDisplay(0);
-    check_display(data->display);
+    check_display(data);
 
     /* Raise if Xrandr is not present */
-    look_for_Xrandr(data->display);
+    look_for_Xrandr(data);
 
     /* Get the default screen identifier for this display */
     data->screen = XDefaultScreen(data->display);
@@ -107,7 +111,7 @@ static VALUE with_current_screen_configuration(VALUE (*f)(struct DisplayData *))
                                                              data->screen));
 
     /* Raise if the screen configuration is invalid */
-    check_screen_configuration(data->screen_configuration);
+    check_screen_configuration(data);
 
     /* Call the function and store its result */
     value = f(data);
@@ -207,21 +211,23 @@ static VALUE find_all_display_modes(struct DisplayData * data) {
     return modes;
 }
 
-static void check_display(Display * d) {
-    if (d == 0) {
+static void check_display(struct DisplayData * data) {
+    if (data->display == 0) {
         rb_raise(rb_eRuntimeError, "could not open Display");
     }
 }
 
-static void look_for_Xrandr(Display * d) {
+static void look_for_Xrandr(struct DisplayData * data) {
     int check;
-    if (!XQueryExtension(d, "RANDR", &check, &check, &check)) {
+    if (!XQueryExtension(data->display, "RANDR", &check, &check, &check)) {
+        XCloseDisplay(data->display);
         rb_raise(rb_eRuntimeError, "Xrandr is not present");
     }
 }
 
-static void check_screen_configuration(XRRScreenConfiguration * config) {
-    if (config == 0) {
+static void check_screen_configuration(struct DisplayData * data) {
+    if (data->screen_configuration == 0) {
+        XCloseDisplay(data->display);
         rb_raise(rb_eRuntimeError, "could not retrieve screen configuration");
     }
 }
