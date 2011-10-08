@@ -7,6 +7,8 @@
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 
+static inline void flush(X11_Window *);
+
 X11_Window * X11_Window_new(void) {
     return malloc(sizeof(X11_Window));
 }
@@ -48,22 +50,22 @@ const char * X11_Window_name(X11_Window * w) {
 
 void X11_Window_set_name(X11_Window * w, const char * name) {
     XStoreName(w->display, w->window, name);
-    XFlush(w->display);
+    flush(w);
 }
 
 void X11_Window_set_pos(X11_Window * w, int x, int y) {
     XMoveWindow(w->display, w->window, x, y);
-    XFlush(w->display);
+    flush(w);
 }
 
 void X11_Window_set_size(X11_Window * w, unsigned int width, unsigned int height) {
     XResizeWindow(w->display, w->window, width, height);
-    XFlush(w->display);
+    flush(w);
 }
 
 void X11_Window_set_area(X11_Window * w, int x, int y, unsigned int width, unsigned int height) {
     XMoveResizeWindow(w->display, w->window, x, y, width, height);
-    XFlush(w->display);
+    flush(w);
 }
 
 void X11_Window_set_visible(X11_Window * w, int visible) {
@@ -72,7 +74,7 @@ void X11_Window_set_visible(X11_Window * w, int visible) {
     } else {
         XUnmapWindow(w->display, w->window);
     }
-    XFlush(w->display);
+    flush(w);
 }
 
 int X11_Window_visible(X11_Window * w) {
@@ -122,6 +124,10 @@ void X11_Window_set_fs(X11_Window * w, int fs) {
         } else {
             XDeleteProperty(w->display, w->window, _NET_WM_STATE);
         }
-        XFlush(w->display);
+        flush(w);
     }
+}
+
+static inline void flush(X11_Window * w) {
+    XFlush(w->display);
 }
