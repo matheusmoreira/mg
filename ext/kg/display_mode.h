@@ -20,9 +20,14 @@ extern VALUE mg_display_mode_get_modes(VALUE klass);
 
 /**
  * Returns a new DisplayMode instance.
- * +klass+ must be the DisplayMode class.
  */
-extern VALUE mg_display_mode_new(VALUE klass, int w, int h, int bpp);
+extern VALUE mg_display_mode_new(VALUE w, VALUE h, VALUE bpp);
+
+/**
+ * Returns a new DisplayMode instance.
+ * Convenience method that takes C integers.
+ */
+extern VALUE mg_display_mode_new_c(int w, int h, int bpp);
 
 /**
  * Initializes the DisplayMode class.

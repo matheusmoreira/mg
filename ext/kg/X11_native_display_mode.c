@@ -146,10 +146,9 @@ static VALUE find_current_display_mode(VALUE klass, struct DisplayData * data) {
          * current display mode, and the value of the default depth for this
          * X server and screen.
          */
-        mode = mg_display_mode_new(klass,
-                                   sizes[currentMode].width,
-                                   sizes[currentMode].height,
-                                   DefaultDepth(data->display, data->screen));
+        mode = mg_display_mode_new_c(sizes[currentMode].width,
+                                     sizes[currentMode].height,
+                                     DefaultDepth(data->display, data->screen));
     }
 
     /* return the current display mode */
@@ -190,10 +189,9 @@ static VALUE find_all_display_modes(VALUE klass, struct DisplayData * data) {
                      * height of the current screen, and the value of the
                      * current depth
                      */
-                    mode = mg_display_mode_new(klass,
-                                               sizes[j].width,
-                                               sizes[j].height,
-                                               depths[i]);
+                    mode = mg_display_mode_new_c(sizes[j].width,
+                                                 sizes[j].height,
+                                                 depths[i]);
 
                     /* Then add it to the ruby array */
                     rb_ary_push(modes, mode);
