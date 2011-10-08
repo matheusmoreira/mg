@@ -26,21 +26,21 @@ static struct DisplayData {
  * This function is responsible for freeing the screen configuration information
  * and closing the connection to the X Server.
  */
-static VALUE with_current_screen_configuration(VALUE (*f)(VALUE, struct DisplayData *), VALUE);
+static VALUE with_current_screen_configuration(VALUE (*f)(struct DisplayData *));
 
 /**
  * Finds the current screen size and depth, given the DisplayData, and returns a
  * Mg::DisplayMode Ruby object containing the information for the current
  * display mode.
  */
-static VALUE find_current_display_mode(VALUE, struct DisplayData *);
+static VALUE find_current_display_mode(struct DisplayData *);
 
 /**
  * Finds all available screen sizes and depths, given the DisplayData, and
  * returns a Ruby array containing Mg::DisplayMode ruby objects, one for each
  * available display configuration.
  */
-static VALUE find_all_display_modes(VALUE, struct DisplayData *);
+static VALUE find_all_display_modes(struct DisplayData *);
 
 /* Native interface implementation */
 
@@ -48,14 +48,14 @@ static VALUE find_all_display_modes(VALUE, struct DisplayData *);
  * Returns all available display modes in a Ruby array.
  */
 VALUE mg_native_display_mode_get_modes(VALUE klass) {
-    return with_current_screen_configuration(&find_all_display_modes, klass);
+    return with_current_screen_configuration(&find_all_display_modes);
 }
 
 /**
  * Returns the current display mode.
  */
 VALUE mg_native_display_mode_get_current_mode(VALUE klass) {
-    return with_current_screen_configuration(&find_current_display_mode, klass);
+    return with_current_screen_configuration(&find_current_display_mode);
 }
 
 /* Helper function prototypes */
@@ -87,7 +87,7 @@ static void check_screen_configuration(XRRScreenConfiguration * config);
 
 /* Helper function implementation */
 
-static VALUE with_current_screen_configuration(VALUE (*f)(VALUE, struct DisplayData *), VALUE klass) {
+static VALUE with_current_screen_configuration(VALUE (*f)(struct DisplayData *)) {
     VALUE value = Qnil;
     struct DisplayData * data = DisplayData_new();
 
@@ -110,7 +110,7 @@ static VALUE with_current_screen_configuration(VALUE (*f)(VALUE, struct DisplayD
     check_screen_configuration(data->screen_configuration);
 
     /* Call the function and store its result */
-    value = f(klass, data);
+    value = f(data);
 
     /* Free the screen information structure */
     XRRFreeScreenConfigInfo(data->screen_configuration);
@@ -125,7 +125,7 @@ static VALUE with_current_screen_configuration(VALUE (*f)(VALUE, struct DisplayD
     return value;
 }
 
-static VALUE find_current_display_mode(VALUE klass, struct DisplayData * data) {
+static VALUE find_current_display_mode(struct DisplayData * data) {
     VALUE mode = Qnil;
     XRRScreenSize * sizes = 0;
     Rotation currentRotation;
@@ -155,7 +155,7 @@ static VALUE find_current_display_mode(VALUE klass, struct DisplayData * data) {
     return mode;
 }
 
-static VALUE find_all_display_modes(VALUE klass, struct DisplayData * data) {
+static VALUE find_all_display_modes(struct DisplayData * data) {
     VALUE mode = Qnil, modes = Qnil;
     XRRScreenSize * sizes = 0;
     int * depths = 0;
