@@ -67,6 +67,11 @@ VALUE mg_native_display_mode_get_current_mode(VALUE klass) {
 static struct DisplayData * DisplayData_new();
 
 /**
+ * Checks if the display data is valid. Raises a Ruby exception if it isn't.
+ */
+static void check_display_data(struct DisplayData *);
+
+/**
  * Checks if the display is valid. Raises a Ruby exception if it isn't.
  */
 static void check_display(struct DisplayData *);
@@ -93,10 +98,18 @@ static void check_screen_configuration(struct DisplayData *);
 
 static VALUE with_current_screen_configuration(VALUE (*f)(struct DisplayData *)) {
     VALUE value = Qnil;
-    struct DisplayData * data = DisplayData_new();
+    struct DisplayData * data = 0;
+
+    /* Allocate memory for the display data */
+    data = DisplayData_new();
+
+    /* Raise if memory could not be allocated */
+    check_display_data(data);
 
     /* Open connection to the X Display Server */
     data->display = XOpenDisplay(0);
+
+    /* Raise if a connection to the X Server could not be established */
     check_display(data);
 
     /* Raise if Xrandr is not present */
@@ -209,6 +222,12 @@ static VALUE find_all_display_modes(struct DisplayData * data) {
 
     /* Return the available display modes */
     return modes;
+}
+
+static void check_display_data(struct DisplayData * data) {
+    if (data == 0) {
+        rb_raise(rb_eRuntimeError, "unable to allocate memory for display data");
+    }
 }
 
 static void check_display(struct DisplayData * data) {
