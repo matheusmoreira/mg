@@ -9,7 +9,7 @@
 
 /* DisplayData structure definition */
 
-static struct DisplayData {
+struct DisplayData {
     Display * display;
     int screen;
     XRRScreenConfiguration * screen_configuration;
