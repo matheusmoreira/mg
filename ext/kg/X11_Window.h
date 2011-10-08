@@ -13,33 +13,6 @@ typedef struct {
     Window window; /** The window. */
 } X11_Window;
 
-/**
- * Motif window hints
- */
-typedef struct {
-    unsigned long flags;
-    unsigned long functions;
-    unsigned long decorations;
-    long          inputMode;
-    unsigned long status;
-} Hints;
-
-/**
- * Atoms.
- */
-#define _NET_WM_STATE_REMOVE 0L
-#define _NET_WM_STATE_ADD    1L
-#define _NET_WM_STATE_TOGGLE 2L
-
-Atom _NET_WM_STATE;
-Atom _NET_WM_STATE_HIDDEN;
-Atom _NET_WM_STATE_MAXIMIZED_VERT;
-Atom _NET_WM_STATE_MAXIMIZED_HORZ;
-Atom _NET_WM_STATE_FULLSCREEN;
-Atom _NET_WM_NAME;
-Atom _NET_WM_ICON_NAME;
-Atom _NET_WM_ICON;
-
 
 /**
  * Returns a pointer to newly allocated memory for a X11_Window.

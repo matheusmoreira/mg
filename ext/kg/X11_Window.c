@@ -7,10 +7,44 @@
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 
+/**
+ * Motif window hints
+ */
+typedef struct {
+    unsigned long flags;
+    unsigned long functions;
+    unsigned long decorations;
+    long          inputMode;
+    unsigned long status;
+} Hints;
+
+/**
+ * Atoms.
+ */
+#define _NET_WM_STATE_REMOVE 0L
+#define _NET_WM_STATE_ADD    1L
+#define _NET_WM_STATE_TOGGLE 2L
+
+Atom _NET_WM_STATE;
+Atom _NET_WM_STATE_HIDDEN;
+Atom _NET_WM_STATE_MAXIMIZED_VERT;
+Atom _NET_WM_STATE_MAXIMIZED_HORZ;
+Atom _NET_WM_STATE_FULLSCREEN;
+Atom _NET_WM_NAME;
+Atom _NET_WM_ICON_NAME;
+Atom _NET_WM_ICON;
+
 static inline void flush(X11_Window *);
 
 X11_Window * X11_Window_new(void) {
     return malloc(sizeof(X11_Window));
+}
+
+void X11_Window_free(void * p) {
+    X11_Window * w = p;
+    XDestroyWindow(w->display, w->window);
+    XCloseDisplay(w->display);
+    free(w);
 }
 
 void X11_Window_init(X11_Window * w) {
@@ -27,13 +61,6 @@ void X11_Window_create(X11_Window * w, int x, int y, unsigned int width, unsigne
                                     XDefaultRootWindow(w->display),
                                     x, y, width, height,
                                     0, white, white);
-}
-
-void X11_Window_free(void * p) {
-    X11_Window * w = p;
-    XDestroyWindow(w->display, w->window);
-    XCloseDisplay(w->display);
-    free(w);
 }
 
 XWindowAttributes X11_Window_get_attributes(X11_Window * w) {
