@@ -1,16 +1,23 @@
 #ifndef MG_X11_X11_WINDOW_H
 #define MG_X11_X11_WINDOW_H
 
+#include <ruby.h>
+
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
+
+#include <GL/gl.h>
+#include <GL/glx.h>
 
 /**
  * Contains data for a X11 window.
  */
 typedef struct {
-    Display * display; /** Pointer to the display on which the window will be created. */
-    int screen; /** Screen on the display. */
+    Display * display; /** Pointer to the display connection. */
+    int screen; /** Window's screen. */
     Window window; /** The window. */
+    GLXContext context; /** The OpenGL context. */
+    Atom close_event_atom; /** Atom that identifies the window close event. */
 } X11_Window;
 
 
@@ -18,11 +25,6 @@ typedef struct {
  * Returns a pointer to newly allocated memory for a X11_Window.
  */
 extern X11_Window * X11_Window_new(void);
-
-/**
- * Initializes a X11_Window.
- */
-extern void X11_Window_init(X11_Window * w);
 
 /**
  * Creates a new display window.
@@ -85,5 +87,10 @@ extern void X11_Window_set_fullscreen(X11_Window * w, int fs);
  * _NET_WM implementation
  */
 extern void X11_Window_set_fs(X11_Window * w, int fs);
+
+/**
+ * Filters X11 window events and calls appropriate callbacks.
+ */
+extern void X11_Window_event_filter(VALUE self);
 
 #endif /* MG_X11_X11_WINDOW_H */

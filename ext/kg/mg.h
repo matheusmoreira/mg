@@ -3,7 +3,7 @@
 
 #include <ruby.h>
 
-static VALUE mg_module = Qnil;
+VALUE mg_module;
 
 extern void init_mg_module(void);
 

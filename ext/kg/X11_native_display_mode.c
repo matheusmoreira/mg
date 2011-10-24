@@ -26,7 +26,7 @@ struct DisplayData {
  * This function is responsible for freeing the screen configuration information
  * and closing the connection to the X Server.
  */
-static VALUE with_current_screen_configuration(VALUE (*f)(struct DisplayData *));
+static VALUE with_current_screen_configuration(VALUE (*)(struct DisplayData *));
 
 /**
  * Finds the current screen size and depth, given the DisplayData, and returns a
@@ -48,14 +48,14 @@ static VALUE find_all_display_modes(struct DisplayData *);
  * Returns all available display modes in a Ruby array.
  */
 VALUE mg_native_display_mode_get_modes(VALUE klass) {
-    return with_current_screen_configuration(&find_all_display_modes);
+    return with_current_screen_configuration(find_all_display_modes);
 }
 
 /**
  * Returns the current display mode.
  */
 VALUE mg_native_display_mode_get_current_mode(VALUE klass) {
-    return with_current_screen_configuration(&find_current_display_mode);
+    return with_current_screen_configuration(find_current_display_mode);
 }
 
 /* Helper function prototypes */

@@ -10,8 +10,9 @@ module Mg
 
 end
 
-# Require core mg library
-require File.join(Mg.lib, 'mg', 'display_mode')
-
 # Require native extension
-require File.join(Mg.lib, 'kg')
+require File.join Mg.lib, 'mg', 'kg'
+
+# Require core mg library
+require File.join Mg.lib, 'mg', 'display_mode'
+require File.join Mg.lib, 'mg', 'window'

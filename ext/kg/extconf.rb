@@ -1,6 +1,8 @@
 require 'mkmf'
 require 'rbconfig'
 
+libs = %w(GL GLU).each { |lib| have_library lib }
+
 case RbConfig::CONFIG['host_os']
   when /linux/
     $defs << '-DMG_PLATFORM_LINUX'
@@ -15,4 +17,4 @@ case RbConfig::CONFIG['host_os']
     exit false
 end
 
-create_makefile 'kg'
+create_makefile 'mg/kg'

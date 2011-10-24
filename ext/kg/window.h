@@ -6,7 +6,7 @@
 /**
  * Window class.
  */
-static VALUE mg_window_class = Qnil;
+VALUE mg_window_class;
 
 /**
  * Allocates memory for the native window.
@@ -97,6 +97,14 @@ extern VALUE mg_window_set_name(VALUE self, VALUE name);
  * Makes the window span the entire screen.
  */
 extern VALUE mg_window_set_fullscreen(VALUE self, VALUE fs);
+
+/**
+ * Takes an implicit Ruby block, and yields a hash containing event data
+ * to it so that events may be handled.
+ *
+ * This method blocks execution.
+ */
+extern VALUE mg_window_handle_events(VALUE self);
 
 /**
  * Defines method under Window class.

@@ -94,8 +94,13 @@ extern void mg_native_window_set_h(VALUE self, unsigned int h);
 extern void mg_native_window_set_name(VALUE self, const char * name);
 
 /**
- * Make the window span the entire screen.
+ * Makes the window span the entire screen.
  */
 extern void mg_native_window_set_fullscreen(VALUE self, int fs);
+
+/**
+ * Filters native window events and calls appropriate callbacks.
+ */
+extern void mg_native_window_event_filter(VALUE self);
 
 #endif /* MG_X11_NATIVE_WINDOW_H */

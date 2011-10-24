@@ -1,4 +1,5 @@
 #include "X11_native_window.h"
+
 #include "X11_Window.h"
 
 #include <ruby.h>
@@ -16,7 +17,6 @@ void mg_native_window_init(VALUE self,
                            int x, int y,
                            unsigned int w, unsigned int h) {
     X11_Window * window = X11_Window_from(self);
-    X11_Window_init(window);
     X11_Window_create(window, x, y, w, h);
     X11_Window_set_name(window, name);
 }
@@ -85,6 +85,10 @@ void mg_native_window_set_name(VALUE self, const char * name) {
 
 void mg_native_window_set_fullscreen(VALUE self, int fullscreen) {
     X11_Window_set_fullscreen(X11_Window_from(self), fullscreen);
+}
+
+void mg_native_window_event_filter(VALUE self) {
+    X11_Window_event_filter(self);
 }
 
 static X11_Window * X11_Window_from(VALUE obj) {
