@@ -103,4 +103,9 @@ extern void mg_native_window_set_fullscreen(VALUE self, int fs);
  */
 extern void mg_native_window_event_filter(VALUE self);
 
+/**
+ * Initializes the X11 Display Server for threading.
+ */
+extern void mg_native_window_system_init(void);
+
 #endif /* MG_X11_NATIVE_WINDOW_H */

@@ -18,6 +18,7 @@ typedef struct {
     Window window; /** The window. */
     GLXContext context; /** The OpenGL context. */
     Atom close_event_atom; /** Atom that identifies the window close event. */
+    int event_loop_running; /** Whether this window's event loop is running. */
 } X11_Window;
 
 

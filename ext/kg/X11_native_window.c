@@ -91,6 +91,12 @@ void mg_native_window_event_filter(VALUE self) {
     X11_Window_event_filter(self);
 }
 
+void mg_native_window_system_init(void) {
+    if(!XInitThreads()) {
+        rb_raise(rb_eRuntimeError, "could not enable X11 thread support");
+    }
+}
+
 static X11_Window * X11_Window_from(VALUE obj) {
     X11_Window * w = 0;
     Data_Get_Struct(obj, X11_Window, w);

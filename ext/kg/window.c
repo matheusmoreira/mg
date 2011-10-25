@@ -121,6 +121,9 @@ void def_mg_window_alias(const char * alias, const char * old) {
 }
 
 void init_mg_window_class_under(VALUE module) {
+    /* Initialize the native windowing system */
+    mg_native_window_system_init();
+
     /* Define Mg::Window class */
     mg_window_class = rb_define_class_under(module, "Window", rb_cObject);
 
@@ -147,7 +150,4 @@ void init_mg_window_class_under(VALUE module) {
     def_mg_window_alias("h",  "height");
     def_mg_window_alias("w=", "width=");
     def_mg_window_alias("h=", "height=");
-
-    /* Initialize the event subsystem */
-    init_mg_window_events();
 }

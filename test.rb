@@ -23,6 +23,4 @@ window.show
 window.x = x
 window.y = y
 
-loop do
-  window.handle_events!
-end
+window.handle_events!

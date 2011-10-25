@@ -65,10 +65,34 @@ static const unsigned long event_mask = FocusChangeMask     |
 
 /* Helper function prototypes */
 
+struct event_struct {
+    VALUE self;
+    XEvent event;
+    Atom close_event_atom;
+};
+
+typedef struct event_struct event_data_t;
+
+/**
+ * Processes events in a parallel thread.
+ *
+ * data should point to the Window Ruby object whose events are to be processed.
+ */
+static void process_events(void * data);
+
+/**
+ * Unblocking function that stops the event filter. Called by the Ruby runtime
+ * if the event processing thread gets killed, the VM gets shutdown, etc.
+ *
+ * data should point to the Window Ruby object whose events were being processed
+ * by the thread.
+ */
+static void stop_event_filter(void * data);
+
 /**
  * Handles the event and calls the appropriate callbacks on the Ruby object.
  */
-static void handle_event(VALUE self, XEvent event, Atom close_event_atom);
+static void handle_event(event_data_t * event_data);
 
 /**
  * Get the Ruby event handler arguments for the passed key event.
@@ -98,6 +122,7 @@ X11_Window * X11_Window_new(void) {
 
 void X11_Window_free(void * p) {
     X11_Window * w = (X11_Window *) p;
+    XLockDisplay(w->display);
     if (w->context) {
         if (glXGetCurrentContext() == w->context) {
             glXMakeCurrent(w->display, None, 0);
@@ -105,6 +130,7 @@ void X11_Window_free(void * p) {
         glXDestroyContext(w->display, w->context);
     }
     XDestroyWindow(w->display, w->window);
+    XUnlockDisplay(w->display);
     XCloseDisplay(w->display);
     free(w);
 }
@@ -125,6 +151,9 @@ void X11_Window_create(X11_Window * w,
         /* Raise an error */
         rb_raise(rb_eRuntimeError, "could not connect to the X Server");
     }
+
+    /* Ensure exclusive access to the Display */
+    XLockDisplay(w->display);
 
     /* If OpenGL isn't supported... */
     if (!glXQueryExtension(w->display, 0, 0)) {
@@ -198,49 +227,66 @@ void X11_Window_create(X11_Window * w,
      */
     glXMakeCurrent(w->display, w->window, w->context);
 
+    /* Release the Display */
+    XUnlockDisplay(w->display);
+
     /* Free the visual info */
     XFree(visual_info);
 }
 
 XWindowAttributes X11_Window_get_attributes(X11_Window * w) {
     XWindowAttributes attributes;
+    XLockDisplay(w->display);
     XGetWindowAttributes(w->display, w->window, &attributes);
+    XUnlockDisplay(w->display);
     return attributes;
 }
 
 const char * X11_Window_name(X11_Window * w) {
     char * name;
+    XLockDisplay(w->display);
     XFetchName(w->display, w->window, &name);
+    XUnlockDisplay(w->display);
     return name;
 }
 
 void X11_Window_set_name(X11_Window * w, const char * name) {
+    XLockDisplay(w->display);
     XStoreName(w->display, w->window, name);
     flush(w);
+    XUnlockDisplay(w->display);
 }
 
 void X11_Window_set_pos(X11_Window * w, int x, int y) {
+    XLockDisplay(w->display);
     XMoveWindow(w->display, w->window, x, y);
     flush(w);
+    XUnlockDisplay(w->display);
 }
 
 void X11_Window_set_size(X11_Window * w, unsigned int width, unsigned int height) {
+    XLockDisplay(w->display);
     XResizeWindow(w->display, w->window, width, height);
     flush(w);
+    XUnlockDisplay(w->display);
 }
 
 void X11_Window_set_area(X11_Window * w, int x, int y, unsigned int width, unsigned int height) {
+    XLockDisplay(w->display);
     XMoveResizeWindow(w->display, w->window, x, y, width, height);
     flush(w);
+    XUnlockDisplay(w->display);
 }
 
 void X11_Window_set_visible(X11_Window * w, int visible) {
+    XLockDisplay(w->display);
     if (visible) {
         XMapWindow(w->display, w->window);
     } else {
         XUnmapWindow(w->display, w->window);
     }
     flush(w);
+    XUnlockDisplay(w->display);
 }
 
 int X11_Window_visible(X11_Window * w) {
@@ -248,6 +294,7 @@ int X11_Window_visible(X11_Window * w) {
 }
 
 void X11_Window_set_fullscreen(X11_Window * w, int fs) {
+    XLockDisplay(w->display);
     if (X11_Window_visible(w)) {
         
     } else {
@@ -263,9 +310,11 @@ void X11_Window_set_fullscreen(X11_Window * w, int fs) {
             // Failed
         }
     }
+    XUnlockDisplay(w->display);
 }
 
 void X11_Window_set_fs(X11_Window * w, int fs) {
+    XLockDisplay(w->display);
     if (X11_Window_visible(w)) {
         XEvent e;
         memset(&e, 0, sizeof(XEvent));
@@ -292,48 +341,79 @@ void X11_Window_set_fs(X11_Window * w, int fs) {
         }
         flush(w);
     }
+    XUnlockDisplay(w->display);
 }
 
 void X11_Window_event_filter(VALUE self) {
-    X11_Window * w = 0;
-    XEvent event;
-
-    /* Retrieve the window data from the Ruby object */
-    Data_Get_Struct(self, X11_Window, w);
-
-    /* Handle only events that originated from the window */
-    while (XCheckIfEvent(w->display, &event, is_from, (XPointer) w->window)) {
-        handle_event(self, event, w->close_event_atom);
-    }
+    rb_thread_call_without_gvl(process_events, &self, stop_event_filter, &self);
 }
 
 /* Helper function implementation */
 
-static void handle_event(VALUE self, XEvent event, Atom close_event_atom) {
+static void process_events(void * data) {
+    event_data_t event_data;
+    X11_Window * w = 0;
+    VALUE * v = (VALUE *) data;
+
+    event_data.self = *v;
+
+    /* Retrieve the window data from the Ruby object */
+    Data_Get_Struct(event_data.self, X11_Window, w);
+
+    event_data.close_event_atom = w->close_event_atom;
+
+    w->event_loop_running = 1;
+
+    while (w->event_loop_running) {
+        XLockDisplay(w->display);
+        /* Handle only events that originated from the window */
+        while (XCheckIfEvent(w->display, &event_data.event, is_from, (XPointer) w->window)) {
+            rb_thread_call_with_gvl(handle_event, &event_data);
+        }
+        XUnlockDisplay(w->display);
+    }
+}
+
+static void stop_event_filter(void * data) {
+    X11_Window * w = 0;
+    VALUE * v = (VALUE *) data;
+    VALUE self = *v;
+
+    /* Retrieve the window data from the Ruby object */
+    Data_Get_Struct(self, X11_Window, w);
+
+    XLockDisplay(w->display);
+
+    w->event_loop_running = 0;
+
+    XUnlockDisplay(w->display);
+}
+
+static void handle_event(event_data_t * event_data) {
     /* Process each kind of event and call the appropriate handler */
-    switch (event.type) {
+    switch (event_data->event.type) {
         /* Window is about to be destroyed by X */
         case DestroyNotify: {
-            printf("DestroyNotify\n");
             break;
         }
         /* Window was closed by the user */
         case ClientMessage: {
-            if (event.xclient.format == 32 && event.xclient.data.l[0] == (long) close_event_atom) {
-                mg_event_call_close_handler(self);
+            if (event_data->event.xclient.format == 32 &&
+                event_data->event.xclient.data.l[0] == (long) event_data->close_event_atom) {
+                mg_event_call_close_handler(event_data->self);
             }
             break;
         }
         /* Key was pressed */
         case KeyPress: {
-            mg_event_call_key_press_handler(self,
-                                            get_args_for_key(event.xkey));
+            mg_event_call_key_press_handler(event_data->self,
+                                            get_args_for_key(event_data->event.xkey));
             break;
         }
         /* Key was released */
         case KeyRelease: {
-            mg_event_call_key_release_handler(self,
-                                              get_args_for_key(event.xkey));
+            mg_event_call_key_release_handler(event_data->self,
+                                              get_args_for_key(event_data->event.xkey));
             break;
         }
     }
