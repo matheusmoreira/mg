@@ -348,6 +348,8 @@ void X11_Window_event_filter(VALUE self) {
     rb_thread_call_without_gvl(process_events, &self, stop_event_filter, &self);
 }
 
+void X11_Window_start_event_loop_thread_for(VALUE self) {}
+
 /* Helper function implementation */
 
 static void process_events(void * data) {

@@ -21,6 +21,10 @@ void mg_native_window_init(VALUE self,
     X11_Window_set_name(window, name);
 }
 
+void mg_native_window_start_event_loop_thread(VALUE self) {
+    X11_Window_start_event_loop_thread_for(self);
+}
+
 int mg_native_window_x(VALUE self) {
     return X11_Window_get_attributes(X11_Window_from(self)).x;
 }

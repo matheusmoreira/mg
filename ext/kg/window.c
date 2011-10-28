@@ -20,6 +20,7 @@ VALUE mg_window_initialize(VALUE self, VALUE name, VALUE x, VALUE y, VALUE w, VA
     Check_Type(h, T_FIXNUM);
     mg_native_window_init(self, StringValueCStr(name),
                           FIX2INT(x), FIX2INT(y), FIX2INT(w), FIX2INT(h));
+    mg_native_window_start_event_loop_thread(self);
     return Qnil;
 }
 

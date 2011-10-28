@@ -17,6 +17,11 @@ extern void mg_native_window_init(VALUE self,
                                   unsigned int w, unsigned int h);
 
 /**
+ * Starts the a X11 event loop for this window in a parallel thread.
+ */
+extern void mg_native_window_start_event_loop_thread(VALUE self);
+
+/**
  * Returns the X coordinate of the window.
  */
 extern int mg_native_window_x(VALUE self);

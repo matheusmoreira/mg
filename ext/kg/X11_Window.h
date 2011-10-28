@@ -94,4 +94,9 @@ extern void X11_Window_set_fs(X11_Window * w, int fs);
  */
 extern void X11_Window_event_filter(VALUE self);
 
+/**
+ * Starts a new thread that runs an event loop for the window.
+ */
+extern void X11_Window_start_event_loop_thread_for(VALUE self);
+
 #endif /* MG_X11_X11_WINDOW_H */
