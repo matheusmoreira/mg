@@ -4,8 +4,6 @@
 
 #include <ruby.h>
 
-static X11_Window * X11_Window_from(VALUE obj);
-
 VALUE mg_native_window_alloc(VALUE klass) {
     X11_Window * w = X11_Window_new();
     // Wrap X11_Window into Ruby VALUE
@@ -101,8 +99,8 @@ void mg_native_window_system_init(void) {
     }
 }
 
-static X11_Window * X11_Window_from(VALUE obj) {
+X11_Window * X11_Window_from(VALUE window) {
     X11_Window * w = 0;
-    Data_Get_Struct(obj, X11_Window, w);
+    Data_Get_Struct(window, X11_Window, w);
     return w;
 }

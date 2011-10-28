@@ -4,6 +4,11 @@
 #include <ruby.h>
 
 /**
+ * Returns the X11_Window data structure inside the Ruby object.
+ */
+extern X11_Window * X11_Window_from(VALUE window);
+
+/**
  * Allocates memory for X11_Window and stores it in the object.
  */
 extern VALUE mg_native_window_alloc(VALUE klass);
