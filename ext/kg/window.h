@@ -39,9 +39,9 @@ extern VALUE mg_window_w(VALUE self);
 extern VALUE mg_window_h(VALUE self);
 
 /**
- * Returns the name of the window.
+ * Returns the title of the window.
  */
-extern VALUE mg_window_name(VALUE self);
+extern VALUE mg_window_title(VALUE self);
 
 /**
  * Returns whether or not the window is visible.

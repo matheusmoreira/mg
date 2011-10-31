@@ -27,19 +27,19 @@ extern int mg_native_window_x(VALUE self);
 extern int mg_native_window_y(VALUE self);
 
 /**
- * Returns the width coordinate of the window.
+ * Returns the width of the window.
  */
 extern unsigned int mg_native_window_w(VALUE self);
 
 /**
- * Returns the height coordinate of the window.
+ * Returns the height of the window.
  */
 extern unsigned int mg_native_window_h(VALUE self);
 
 /**
- * Returns the name of the window.
+ * Returns the name of the X11 window.
  */
-extern const char * mg_native_window_name(VALUE self);
+extern const char * mg_native_window_title(VALUE self);
 
 /**
  * Returns a non-zero value if the window is visible, zero otherwise.
@@ -47,7 +47,7 @@ extern const char * mg_native_window_name(VALUE self);
 extern int mg_native_window_visible(VALUE self);
 
 /**
- * Sets the position of the window in 2D space.
+ * Sets the position of the window on the screen.
  */
 extern void mg_native_window_set_pos(VALUE self, int x, int y);
 

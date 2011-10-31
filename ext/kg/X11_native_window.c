@@ -37,7 +37,7 @@ unsigned int mg_native_window_h(VALUE self) {
     return X11_Window_get_attributes(X11_Window_from(self)).height;
 }
 
-const char * mg_native_window_name(VALUE self) {
+const char * mg_native_window_title(VALUE self) {
     return X11_Window_name(X11_Window_from(self));
 }
 

@@ -39,8 +39,8 @@ VALUE mg_window_h(VALUE self) {
     return INT2FIX(mg_native_window_h(self));
 }
 
-VALUE mg_window_name(VALUE self) {
-    return rb_str_new_cstr(mg_native_window_name(self));
+VALUE mg_window_title(VALUE self) {
+    return rb_str_new_cstr(mg_native_window_title(self));
 }
 
 VALUE mg_window_visible(VALUE self) {
@@ -136,7 +136,7 @@ void init_mg_window_class_under(VALUE module) {
     def_mg_window_method("y",              mg_window_y,              0);
     def_mg_window_method("width",          mg_window_w,              0);
     def_mg_window_method("height",         mg_window_h,              0);
-    def_mg_window_method("name",           mg_window_name,           0);
+    def_mg_window_method("title",          mg_window_title,          0);
     def_mg_window_method("visible?",       mg_window_visible,        0);
     def_mg_window_method("x=",             mg_window_set_x,          1);
     def_mg_window_method("y=",             mg_window_set_y,          1);
@@ -146,8 +146,9 @@ void init_mg_window_class_under(VALUE module) {
     def_mg_window_method("visible=",       mg_window_set_visible,    1);
     def_mg_window_method("fullscreen=",    mg_window_set_fullscreen, 1);
     def_mg_window_method("handle_events!", mg_window_handle_events,  0);
-    def_mg_window_alias("w",  "width");
-    def_mg_window_alias("h",  "height");
-    def_mg_window_alias("w=", "width=");
-    def_mg_window_alias("h=", "height=");
+    def_mg_window_alias("name", "title");
+    def_mg_window_alias("w",    "width");
+    def_mg_window_alias("h",    "height");
+    def_mg_window_alias("w=",   "width=");
+    def_mg_window_alias("h=",   "height=");
 }
