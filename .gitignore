@@ -1,5 +1,9 @@
+build/
+
+Gemfile.lock
+Makefile
+
 *.log
 *.[oa]
 *.so
-Makefile
-build/
+*.dll

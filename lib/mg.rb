@@ -13,6 +13,6 @@ end
 # Require native extension
 require File.join Mg.lib, 'mg', 'kg'
 
-# Require core mg library
+# Require core library
 require File.join Mg.lib, 'mg', 'display_mode'
 require File.join Mg.lib, 'mg', 'window'
