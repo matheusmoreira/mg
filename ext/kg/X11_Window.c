@@ -14,8 +14,6 @@
 #include <GL/glu.h>
 #include <GL/glx.h>
 
-#include <stdio.h>
-
 /**
  * Motif window hints
  */
@@ -65,34 +63,36 @@ static const unsigned long event_mask = FocusChangeMask     |
 
 /* Helper function prototypes */
 
-struct event_struct {
+typedef struct event_struct {
     VALUE self;
-    XEvent event;
+    XEvent xevent;
     Atom close_event_atom;
-};
-
-typedef struct event_struct event_data_t;
+} event_t;
 
 /**
- * Processes events in a parallel thread.
+ * X11 event loop.
+ *
+ * This function is called WITHOUT the Ruby GVL.
  *
  * data should point to the Window Ruby object whose events are to be processed.
  */
 static void process_events(void * data);
 
 /**
- * Unblocking function that stops the event filter. Called by the Ruby runtime
- * if the event processing thread gets killed, the VM gets shutdown, etc.
+ * Unblocking function that stops the event loop. Called by the Ruby runtime if
+ * the user interrupts the method, the VM gets shutdown, etc.
  *
- * data should point to the Window Ruby object whose events were being processed
- * by the thread.
+ * data should point to the Window Ruby object whose events were being
+ * processed.
  */
-static void stop_event_filter(void * data);
+static void stop_processing_events(void * data);
 
 /**
  * Handles the event and calls the appropriate callbacks on the Ruby object.
+ *
+ * This function is called WITH the Ruby GVL.
  */
-static void handle_event(event_data_t * event_data);
+static void handle_event(event_t * event_data);
 
 /**
  * Get the Ruby event handler arguments for the passed key event.
@@ -345,75 +345,78 @@ void X11_Window_set_fs(X11_Window * w, int fs) {
 }
 
 void X11_Window_event_filter(VALUE self) {
-    rb_thread_call_without_gvl(process_events, &self, stop_event_filter, &self);
+    rb_thread_call_without_gvl(process_events, &self, stop_processing_events, &self);
 }
 
 /* Helper function implementation */
 
 static void process_events(void * data) {
-    event_data_t event_data;
+    event_t event;
     X11_Window * w = 0;
-    VALUE * v = (VALUE *) data;
 
-    event_data.self = *v;
+    /* Get our Window object */
+    event.self = *((VALUE *) data);
 
     /* Retrieve the window data from the Ruby object */
-    Data_Get_Struct(event_data.self, X11_Window, w);
+    Data_Get_Struct(event.self, X11_Window, w);
 
-    event_data.close_event_atom = w->close_event_atom;
+    event.close_event_atom = w->close_event_atom;
 
+    /* Start the event loop by setting its condition variable to true */
     w->event_loop_running = 1;
 
+    /* While the event loop is running... */
     while (w->event_loop_running) {
+
+        /* Ensure exclusive access to the Display */
         XLockDisplay(w->display);
+
         /* Handle only events that originated from the window */
-        while (XCheckIfEvent(w->display, &event_data.event, is_from, (XPointer) w->window)) {
-            rb_thread_call_with_gvl(handle_event, &event_data);
+        while (XCheckIfEvent(w->display, &event.xevent, is_from, (XPointer) w->window)) {
+            rb_thread_call_with_gvl(handle_event, &event);
         }
+
+        /* Release the Display */
         XUnlockDisplay(w->display);
     }
 }
 
-static void stop_event_filter(void * data) {
+static void stop_processing_events(void * data) {
     X11_Window * w = 0;
-    VALUE * v = (VALUE *) data;
-    VALUE self = *v;
+    VALUE self = *((VALUE *) data);
 
     /* Retrieve the window data from the Ruby object */
     Data_Get_Struct(self, X11_Window, w);
 
-    XLockDisplay(w->display);
-
+    /* Stop the event loop by setting its condition variable to false */
     w->event_loop_running = 0;
-
-    XUnlockDisplay(w->display);
 }
 
-static void handle_event(event_data_t * event_data) {
+static void handle_event(event_t * event) {
     /* Process each kind of event and call the appropriate handler */
-    switch (event_data->event.type) {
+    switch (event->xevent.type) {
         /* Window is about to be destroyed by X */
         case DestroyNotify: {
             break;
         }
         /* Window was closed by the user */
         case ClientMessage: {
-            if (event_data->event.xclient.format == 32 &&
-                event_data->event.xclient.data.l[0] == (long) event_data->close_event_atom) {
-                mg_event_call_close_handler(event_data->self);
+            if (event->xevent.xclient.format == 32 &&
+                event->xevent.xclient.data.l[0] == (long) event->close_event_atom) {
+                mg_event_call_close_handler(event->self);
             }
             break;
         }
         /* Key was pressed */
         case KeyPress: {
-            mg_event_call_key_press_handler(event_data->self,
-                                            get_args_for_key(event_data->event.xkey));
+            mg_event_call_key_press_handler(event->self,
+                                            get_args_for_key(event->xevent.xkey));
             break;
         }
         /* Key was released */
         case KeyRelease: {
-            mg_event_call_key_release_handler(event_data->self,
-                                              get_args_for_key(event_data->event.xkey));
+            mg_event_call_key_release_handler(event->self,
+                                              get_args_for_key(event->xevent.xkey));
             break;
         }
     }
