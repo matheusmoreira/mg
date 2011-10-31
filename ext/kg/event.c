@@ -1,15 +1,38 @@
 #include "event.h"
 
+#include <pthread.h>
+
 #include <ruby.h>
 
-#include <stdio.h>
+/* Mg event queue */
 
-/* Event handler method IDs */
+/**
+ * Mg event list.
+ */
+static mg_event_t * mg_event_list;
 
-static ID mg_event_window_close_handler;
-static ID mg_event_keyboard_key_press_handler;
-static ID mg_event_keyboard_key_release_handler;
-static ID call;
+/**
+ * Mutex for the event list.
+ */
+static pthread_mutex_t mg_event_list_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+/**
+ * Condition variable for the event list.
+ */
+static pthread_cond_t mg_event_list_cond = PTHREAD_COND_INITIALIZER;
+
+/* Ruby event thread */
+
+/**
+ * The Ruby Event Thread.
+ */
+static VALUE mg_event_ruby_event_thread;
+
+/**
+ * Starts a Ruby thread that polls the event list continuously and calls the
+ * event's window's callbacks. 
+ */
+static void mg_event_start_ruby_event_thread(void);
 
 /* Helper function prototypes */
 
@@ -24,12 +47,19 @@ static void mg_event_init_sym(VALUE *, const char *);
  */
 static VALUE mg_event_call_handler(VALUE window, ID handler, VALUE args);
 
+/* Event handler method IDs */
+
+static ID mg_event_window_close_handler;
+static ID mg_event_keyboard_key_press_handler;
+static ID mg_event_keyboard_key_release_handler;
+static ID call;
+
 /* Event interface implementation */
 
-VALUE mg_event_call_close_handler(VALUE window) {
+VALUE mg_event_call_close_handler(VALUE window, VALUE args) {
     return mg_event_call_handler(window,
                                  mg_event_window_close_handler,
-                                 Qnil);
+                                 args);
 }
 
 VALUE mg_event_call_key_press_handler(VALUE window, VALUE args) {
@@ -81,6 +111,86 @@ void init_mg_window_events() {
 
     /* Special symbols */
     mg_event_init_sym(&mg_event_keyboard_key_unsupported_symbol, "unsupported");
+}
+
+/* Ruby Event Thread */
+
+static void mg_event_handle_event(mg_event_t * event) {
+}
+
+typedef struct event_poll_struct {
+    mg_event_t * event;
+    int waiting;
+} event_poll_t;
+
+static void wait_for_events(void * p) {
+    event_poll_t * event_poll = (event_poll_t *) p;
+
+    /* Lock the the event list in order to ensure exclusive access */
+    pthread_mutex_lock(&mg_event_list_mutex);
+
+    /* While we are waiting AND ... */
+    while (event_poll->waiting &&
+           /* ... the global event list is empty */
+           (event_poll->event = mg_event_pop()) == 0) {
+        /* Wait for a wakeup signal */
+        pthread_cond_wait(&mg_event_list_cond);
+    }
+
+    /* Unlock the event list */
+    pthread_mutex_unlock(&mg_event_list_mutex);
+}
+
+static void stop_waiting_for_events(void * p) {
+    event_poll_t * event_poll = (event_poll_t *) p;
+
+    /* Lock the the event list in order to ensure exclusive access */
+    pthread_mutex_lock(&mg_event_list_mutex);
+
+    /* Stop waiting for events */
+    event_poll->waiting = 0;
+
+    /* Wake up waiting thread */
+    pthread_cond_signal(&mg_event_list_cond);
+
+    /* Unlock the event list */
+    pthread_mutex_unlocklock(&mg_event_list_mutex);
+}
+
+static void mg_event_poll_events(void * unused) {
+    event_poll_t event_poll = { .event = 0, .waiting = 1 };
+
+    while (event_poll.waiting) {
+        /* Release the GVL and wait for events to handle */
+        rb_thread_blocking_region(wait_for_events,         &event_poll,
+                                  stop_waiting_for_events, &event_poll);
+
+        /* If we received an event... */
+        if (event_poll.event) {
+            /* ... handle it in a new thread */
+            rb_thread_create(mg_event_handle_event, event_poll.event);
+        }
+    }
+}
+
+static void mg_event_start_event_thread() {
+    mg_event_ruby_event_thread = rb_thread_create(mg_event_poll_events, 0);
+    rb_global_variable(mg_event_ruby_event_thread);
+}
+
+/* Mg event queue */
+
+void mg_event_push(mg_event_t * event) {
+    event->next = mg_event_list;
+    mg_event_list = event;
+}
+
+mg_event_t * mg_event_pop(void) {
+    mg_event_t * event = mg_event_list;
+    if (event) {
+        mg_event_list = event->next;
+    }
+    return event;
 }
 
 /* Helper function implementation */

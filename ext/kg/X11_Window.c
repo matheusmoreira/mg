@@ -3,6 +3,8 @@
 #include "event.h"
 
 #include <stdlib.h>
+#include <stdio.h>
+#include <pthread.h>
 
 #include <ruby.h>
 
@@ -13,8 +15,6 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <GL/glx.h>
-
-#include <stdio.h>
 
 /**
  * Motif window hints
@@ -67,11 +67,11 @@ static const unsigned long event_mask = FocusChangeMask     |
 
 struct event_struct {
     VALUE self;
-    XEvent event;
+    XEvent xevent;
     Atom close_event_atom;
 };
 
-typedef struct event_struct event_data_t;
+typedef struct event_struct event_t;
 
 /**
  * Processes events in a parallel thread.
@@ -345,22 +345,23 @@ void X11_Window_set_fs(X11_Window * w, int fs) {
 }
 
 void X11_Window_event_filter(VALUE self) {
-    rb_thread_call_without_gvl(process_events, &self, stop_event_filter, &self);
+    //rb_thread_call_without_gvl(process_events, &self, stop_event_filter, &self);
 }
 
-void X11_Window_start_event_loop_thread_for(VALUE self) {}
+void X11_Window_start_event_loop_thread_for(VALUE self) {
+    X11_Window * window = X11_Window_from(self);
+    pthread_create(window->event_loop_thread, 0,
+                   process_events, (void *) &self);
+}
 
 /* Helper function implementation */
 
 static void process_events(void * data) {
-    event_data_t event_data;
+    event_t event;
     X11_Window * w = 0;
-    VALUE * v = (VALUE *) data;
 
-    event_data.self = *v;
-
-    /* Retrieve the window data from the Ruby object */
-    Data_Get_Struct(event_data.self, X11_Window, w);
+    event.self = *((VALUE *) data);
+    w = X11_Window_from(event.self);
 
     event_data.close_event_atom = w->close_event_atom;
 
@@ -369,11 +370,45 @@ static void process_events(void * data) {
     while (w->event_loop_running) {
         XLockDisplay(w->display);
         /* Handle only events that originated from the window */
-        while (XCheckIfEvent(w->display, &event_data.event, is_from, (XPointer) w->window)) {
-            rb_thread_call_with_gvl(handle_event, &event_data);
+        while (XCheckIfEvent(w->display, &event.xevent, is_from, (XPointer) w->window)) {
+            handle_event(&event);
         }
         XUnlockDisplay(w->display);
     }
+}
+
+static void handle_event(event_t * event) {
+    mg_event_t mg_event;
+    mg_event.window = event->self;
+    mg_event.args = Qnil;
+    /* Process each kind of event and call the appropriate handler */
+    switch (event->xevent.type) {
+        /* Window is about to be destroyed by X */
+        case DestroyNotify: {
+            break;
+        }
+        /* Window was closed by the user */
+        case ClientMessage: {
+            if (event->xevent.xclient.format == 32 &&
+                event->xevent.xclient.data.l[0] == (long) event->close_event_atom) {
+                mg_event.handler_function = mg_event_call_close_handler;
+            }
+            break;
+        }
+        /* Key was pressed */
+        case KeyPress: {
+            mg_event.handler_function = mg_event_call_key_press_handler;
+            mg_event.args = get_args_for_key(event->xevent.xkey);
+            break;
+        }
+        /* Key was released */
+        case KeyRelease: {
+            mg_event.handler_function = mg_event_call_key_release_handler;
+            mg_event.args = get_args_for_key(event->xevent.xkey);
+            break;
+        }
+    }
+    mg_push_event(mg_event);
 }
 
 static void stop_event_filter(void * data) {
@@ -389,36 +424,6 @@ static void stop_event_filter(void * data) {
     w->event_loop_running = 0;
 
     XUnlockDisplay(w->display);
-}
-
-static void handle_event(event_data_t * event_data) {
-    /* Process each kind of event and call the appropriate handler */
-    switch (event_data->event.type) {
-        /* Window is about to be destroyed by X */
-        case DestroyNotify: {
-            break;
-        }
-        /* Window was closed by the user */
-        case ClientMessage: {
-            if (event_data->event.xclient.format == 32 &&
-                event_data->event.xclient.data.l[0] == (long) event_data->close_event_atom) {
-                mg_event_call_close_handler(event_data->self);
-            }
-            break;
-        }
-        /* Key was pressed */
-        case KeyPress: {
-            mg_event_call_key_press_handler(event_data->self,
-                                            get_args_for_key(event_data->event.xkey));
-            break;
-        }
-        /* Key was released */
-        case KeyRelease: {
-            mg_event_call_key_release_handler(event_data->self,
-                                              get_args_for_key(event_data->event.xkey));
-            break;
-        }
-    }
 }
 
 static VALUE get_args_for_key(XKeyEvent event) {

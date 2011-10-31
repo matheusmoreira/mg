@@ -1,6 +1,8 @@
 #ifndef MG_X11_X11_WINDOW_H
 #define MG_X11_X11_WINDOW_H
 
+#include <pthread.h>
+
 #include <ruby.h>
 
 #include <X11/Xlib.h>
@@ -19,6 +21,7 @@ typedef struct {
     GLXContext context; /** The OpenGL context. */
     Atom close_event_atom; /** Atom that identifies the window close event. */
     int event_loop_running; /** Whether this window's event loop is running. */
+    pthread_t event_loop_thread; /** Event loop thread. */
 } X11_Window;
 
 
