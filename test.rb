@@ -23,4 +23,4 @@ window.show
 window.x = x
 window.y = y
 
-window.handle_events!
+window.event_thread.join

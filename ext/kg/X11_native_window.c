@@ -4,7 +4,21 @@
 
 #include <ruby.h>
 
+/* Helper function prototypes */
+
+/**
+ * Catches native window events and calls appropriate callbacks.
+ *
+ * The data should point to a Mg::Window Ruby object.
+ */
+static VALUE mg_native_window_event_filter(void * data);
+
+/**
+ * Returns the encapsulated X11_Window structure from the Ruby object.
+ */
 static X11_Window * X11_Window_from(VALUE obj);
+
+/* Native window interface implementation */
 
 VALUE mg_native_window_alloc(VALUE klass) {
     X11_Window * w = X11_Window_new();
@@ -87,14 +101,35 @@ void mg_native_window_set_fullscreen(VALUE self, int fullscreen) {
     X11_Window_set_fullscreen(X11_Window_from(self), fullscreen);
 }
 
-void mg_native_window_event_filter(VALUE self) {
-    X11_Window_event_filter(self);
+VALUE mg_native_window_start_event_thread(VALUE self) {
+    /* Implementation note:
+     *
+     * When (void *) &self is passed as the thread function parameter and then
+     * dereferenced in the thread function:
+     *
+     *     VALUE self = *((VALUE *) data);
+     *
+     * The result is a segmentation fault due to an invalid pointer. That
+     * happens because, in Ruby 1.9.2, rb_thread_create stores the void pointer
+     * as a VALUE. As a result, a VALUE is passed to the function, not a pointer
+     * to value.
+     */
+    return rb_thread_create(mg_native_window_event_filter, self);
 }
 
 void mg_native_window_system_init(void) {
     if(!XInitThreads()) {
         rb_raise(rb_eRuntimeError, "could not enable X11 thread support");
     }
+}
+
+/* Helper function implementation */
+
+static VALUE mg_native_window_event_filter(void * data) {
+    /* Void pointer cast to VALUE: see note above */
+    VALUE self = (VALUE) data;
+    X11_Window_event_filter(self);
+    return Qnil;
 }
 
 static X11_Window * X11_Window_from(VALUE obj) {

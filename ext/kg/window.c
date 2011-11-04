@@ -8,6 +8,24 @@
 
 #include <ruby.h>
 
+/* Constant definitions */
+
+static const char * evt_thr_ivar = "@event_thread";
+
+/* Helper function prototypes */
+
+/**
+ * Defines a method under the Mg::Window class.
+ */
+static void def_mg_window_method(const char * name, VALUE (*func)(), int argc);
+
+/**
+ * Defines an alias to a method under the Mg::Window class.
+ */
+static void def_mg_window_alias(const char * alias, const char * old);
+
+/* Window interface implementation */
+
 VALUE mg_window_alloc(VALUE klass) {
     return mg_native_window_alloc(klass);
 }
@@ -20,6 +38,7 @@ VALUE mg_window_initialize(VALUE self, VALUE name, VALUE x, VALUE y, VALUE w, VA
     Check_Type(h, T_FIXNUM);
     mg_native_window_init(self, StringValueCStr(name),
                           FIX2INT(x), FIX2INT(y), FIX2INT(w), FIX2INT(h));
+    mg_window_start_event_thread(self);
     return Qnil;
 }
 
@@ -107,17 +126,21 @@ VALUE mg_window_set_fullscreen(VALUE self, VALUE fs) {
     mg_native_window_set_fullscreen(self, RTEST(fs));
 }
 
-VALUE mg_window_handle_events(VALUE self) {
-    mg_native_window_event_filter(self);
-    return Qnil;
+VALUE mg_window_start_event_thread(VALUE self) {
+    VALUE thread;
+    mg_window_stop_event_thread(self);
+    thread = mg_native_window_start_event_thread(self);
+    rb_iv_set(self, evt_thr_ivar, thread);
+    return thread;
 }
 
-void def_mg_window_method(const char * name, VALUE (*func)(), int argc) {
-    rb_define_method(mg_window_class, name, func, argc);
-}
-
-void def_mg_window_alias(const char * alias, const char * old) {
-    rb_define_alias(mg_window_class, alias, old);
+VALUE mg_window_stop_event_thread(VALUE self) {
+    VALUE thread;
+    thread = rb_iv_get(self, evt_thr_ivar);
+    if (!NIL_P(thread)) {
+        rb_thread_kill(thread);
+    }
+    return thread;
 }
 
 void init_mg_window_class_under(VALUE module) {
@@ -131,24 +154,37 @@ void init_mg_window_class_under(VALUE module) {
     rb_define_alloc_func(mg_window_class, mg_window_alloc);
 
     /* Define the instance methods */
-    def_mg_window_method("initialize",     mg_window_initialize,     5);
-    def_mg_window_method("x",              mg_window_x,              0);
-    def_mg_window_method("y",              mg_window_y,              0);
-    def_mg_window_method("width",          mg_window_w,              0);
-    def_mg_window_method("height",         mg_window_h,              0);
-    def_mg_window_method("title",          mg_window_title,          0);
-    def_mg_window_method("visible?",       mg_window_visible,        0);
-    def_mg_window_method("x=",             mg_window_set_x,          1);
-    def_mg_window_method("y=",             mg_window_set_y,          1);
-    def_mg_window_method("width=",         mg_window_set_w,          1);
-    def_mg_window_method("height=",        mg_window_set_h,          1);
-    def_mg_window_method("name=",          mg_window_set_name,       1);
-    def_mg_window_method("visible=",       mg_window_set_visible,    1);
-    def_mg_window_method("fullscreen=",    mg_window_set_fullscreen, 1);
-    def_mg_window_method("handle_events!", mg_window_handle_events,  0);
+    def_mg_window_method("initialize",         mg_window_initialize,         5);
+    def_mg_window_method("x",                  mg_window_x,                  0);
+    def_mg_window_method("y",                  mg_window_y,                  0);
+    def_mg_window_method("width",              mg_window_w,                  0);
+    def_mg_window_method("height",             mg_window_h,                  0);
+    def_mg_window_method("title",              mg_window_title,              0);
+    def_mg_window_method("visible?",           mg_window_visible,            0);
+    def_mg_window_method("x=",                 mg_window_set_x,              1);
+    def_mg_window_method("y=",                 mg_window_set_y,              1);
+    def_mg_window_method("width=",             mg_window_set_w,              1);
+    def_mg_window_method("height=",            mg_window_set_h,              1);
+    def_mg_window_method("name=",              mg_window_set_name,           1);
+    def_mg_window_method("visible=",           mg_window_set_visible,        1);
+    def_mg_window_method("fullscreen=",        mg_window_set_fullscreen,     1);
+    def_mg_window_method("start_event_thread", mg_window_start_event_thread, 0);
+    def_mg_window_method("stop_event_thread",  mg_window_stop_event_thread,  0);
+
+    /* Define aliases */
     def_mg_window_alias("name", "title");
     def_mg_window_alias("w",    "width");
     def_mg_window_alias("h",    "height");
     def_mg_window_alias("w=",   "width=");
     def_mg_window_alias("h=",   "height=");
+}
+
+/* Helper function implementation */
+
+static void def_mg_window_method(const char * name, VALUE (*func)(), int argc) {
+    rb_define_method(mg_window_class, name, func, argc);
+}
+
+static void def_mg_window_alias(const char * alias, const char * old) {
+    rb_define_alias(mg_window_class, alias, old);
 }

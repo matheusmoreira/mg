@@ -99,9 +99,9 @@ extern void mg_native_window_set_name(VALUE self, const char * name);
 extern void mg_native_window_set_fullscreen(VALUE self, int fs);
 
 /**
- * Filters native window events and calls appropriate callbacks.
+ * Starts a Ruby thread that runs this Window's event loop and returns it.
  */
-extern void mg_native_window_event_filter(VALUE self);
+extern VALUE mg_native_window_start_event_thread(VALUE self);
 
 /**
  * Initializes the X11 Display Server for threading.

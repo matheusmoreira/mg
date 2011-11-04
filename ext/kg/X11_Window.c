@@ -345,7 +345,8 @@ void X11_Window_set_fs(X11_Window * w, int fs) {
 }
 
 void X11_Window_event_filter(VALUE self) {
-    rb_thread_call_without_gvl(process_events, &self, stop_processing_events, &self);
+    rb_thread_call_without_gvl(process_events,         (void *) &self,
+                               stop_processing_events, (void *) &self);
 }
 
 /* Helper function implementation */

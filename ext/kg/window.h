@@ -4,7 +4,7 @@
 #include <ruby.h>
 
 /**
- * Window class.
+ * Mg::Window class.
  */
 VALUE mg_window_class;
 
@@ -99,22 +99,14 @@ extern VALUE mg_window_set_name(VALUE self, VALUE name);
 extern VALUE mg_window_set_fullscreen(VALUE self, VALUE fs);
 
 /**
- * Takes an implicit Ruby block, and yields a hash containing event data
- * to it so that events may be handled.
- *
- * This method blocks execution.
+ * Starts a Ruby thread that processes native window events.
  */
-extern VALUE mg_window_handle_events(VALUE self);
+extern VALUE mg_window_start_event_thread(VALUE self);
 
 /**
- * Defines method under Window class.
+ * Stops the window's native event processing thread.
  */
-extern void def_mg_window_method(const char * name, VALUE (*func)(), int argc);
-
-/**
- * Defines an alias to a method under Window class.
- */
-extern void def_mg_window_alias(const char * alias, const char * old);
+VALUE mg_window_stop_event_thread(VALUE self);
 
 /**
  * Ruby Window class initialization.

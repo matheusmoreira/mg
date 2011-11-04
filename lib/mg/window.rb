@@ -2,6 +2,8 @@ class Mg::Window
 
   SUPPORTED_EVENTS = %w(close key_press key_release).map!(&:to_sym).freeze
 
+  attr_reader :event_thread
+
   def show
     self.visible = true
   end
