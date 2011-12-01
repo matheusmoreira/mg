@@ -1,3 +1,4 @@
+#!/usr/bin/env ruby
 load './lib/mg.rb'
 
 include Mg
