@@ -442,6 +442,8 @@ static VALUE get_args_for_key(XKeyEvent event) {
     return args;
 }
 
+#define X_KEY_CASE(xkey, key) case XK_##xkey: return mg_event_keyboard_key_##key##_symbol
+
 static VALUE X11_key_to_ruby_symbol(KeySym key) {
     KeySym lower, upper;
 
@@ -450,38 +452,40 @@ static VALUE X11_key_to_ruby_symbol(KeySym key) {
 
     /* Convert key to the corresponding Ruby symbol */
     switch (upper) {
-        case XK_A: return mg_event_keyboard_key_a_symbol;
-        case XK_B: return mg_event_keyboard_key_b_symbol;
-        case XK_C: return mg_event_keyboard_key_c_symbol;
-        case XK_D: return mg_event_keyboard_key_d_symbol;
-        case XK_E: return mg_event_keyboard_key_e_symbol;
-        case XK_F: return mg_event_keyboard_key_f_symbol;
-        case XK_G: return mg_event_keyboard_key_g_symbol;
-        case XK_H: return mg_event_keyboard_key_h_symbol;
-        case XK_I: return mg_event_keyboard_key_i_symbol;
-        case XK_J: return mg_event_keyboard_key_j_symbol;
-        case XK_K: return mg_event_keyboard_key_k_symbol;
-        case XK_L: return mg_event_keyboard_key_l_symbol;
-        case XK_M: return mg_event_keyboard_key_m_symbol;
-        case XK_N: return mg_event_keyboard_key_n_symbol;
-        case XK_O: return mg_event_keyboard_key_o_symbol;
-        case XK_P: return mg_event_keyboard_key_p_symbol;
-        case XK_Q: return mg_event_keyboard_key_q_symbol;
-        case XK_R: return mg_event_keyboard_key_r_symbol;
-        case XK_S: return mg_event_keyboard_key_s_symbol;
-        case XK_T: return mg_event_keyboard_key_t_symbol;
-        case XK_U: return mg_event_keyboard_key_u_symbol;
-        case XK_V: return mg_event_keyboard_key_v_symbol;
-        case XK_W: return mg_event_keyboard_key_w_symbol;
-        case XK_X: return mg_event_keyboard_key_x_symbol;
-        case XK_Y: return mg_event_keyboard_key_y_symbol;
-        case XK_Z: return mg_event_keyboard_key_z_symbol;
-        default:   return mg_event_keyboard_key_unsupported_symbol;
+        X_KEY_CASE(A, a);
+        X_KEY_CASE(B, b);
+        X_KEY_CASE(C, c);
+        X_KEY_CASE(D, d);
+        X_KEY_CASE(E, e);
+        X_KEY_CASE(F, f);
+        X_KEY_CASE(G, g);
+        X_KEY_CASE(H, h);
+        X_KEY_CASE(I, i);
+        X_KEY_CASE(J, j);
+        X_KEY_CASE(K, k);
+        X_KEY_CASE(L, l);
+        X_KEY_CASE(M, m);
+        X_KEY_CASE(N, n);
+        X_KEY_CASE(O, o);
+        X_KEY_CASE(P, p);
+        X_KEY_CASE(Q, q);
+        X_KEY_CASE(R, r);
+        X_KEY_CASE(S, s);
+        X_KEY_CASE(T, t);
+        X_KEY_CASE(U, u);
+        X_KEY_CASE(V, v);
+        X_KEY_CASE(W, w);
+        X_KEY_CASE(X, x);
+        X_KEY_CASE(Y, y);
+        X_KEY_CASE(Z, z);
+        default: return mg_event_keyboard_key_unsupported_symbol;
     }
 
     /* If we somehow get here, just return unsupported */
     return mg_event_keyboard_key_unsupported_symbol;
 }
+
+#undef X_KEY_CASE
 
 static Bool is_from(Display * display, XEvent * event, XPointer arg) {
     return event->xany.window == (Window) arg;
